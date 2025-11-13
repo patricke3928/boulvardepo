@@ -1,0 +1,16 @@
+{% for tour in tours %}
+<div class="tour-card show">
+    <img src="{{ tour.image.url|default:'/static/images/no-image.jpg' }}" alt="{{ tour.title }}">
+    <div class="content">
+        <h2>{{ tour.title }}</h2>
+        <p>{{ tour.description|truncatechars:120 }}</p>
+        <div class="price">${{ tour.price }}</div>
+        <div class="buttons">
+            <a href="{% url 'tours:tour_detail' tour.id %}">Details</a>
+            <a href="{% url 'tours:book_tour' tour.id %}">Book</a>
+        </div>
+    </div>
+</div>
+{% empty %}
+<p style="color:#aaa;text-align:center;">No tours available.</p>
+{% endfor %}

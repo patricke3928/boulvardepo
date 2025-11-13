@@ -1,0 +1,72 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{% if form.instance.pk %}Edit{% else %}New{% endif %} Post</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body { margin:0; font-family:'Poppins',sans-serif; background:#0b0b0b; color:white; }
+canvas { position:fixed; top:0; left:0; width:100%; height:100%; z-index:-1; }
+.navbar { display:flex; justify-content:flex-end; gap:15px; padding:20px 50px; background: rgba(255,255,255,0.08); backdrop-filter:blur(12px);}
+.navbar a { color:white; text-decoration:none; padding:8px 16px; border-radius:8px; transition:0.3s; }
+.navbar a:hover { background: rgba(255,255,255,0.15);}
+form { width:90%; max-width:600px; margin:60px auto; background: rgba(255,255,255,0.08); backdrop-filter:blur(15px); border-radius:20px; padding:30px; display:flex; flex-direction:column; gap:20px; }
+input, textarea { width:100%; padding:12px; border-radius:8px; border:none; background: rgba(255,255,255,0.1); color:white; }
+button { padding:12px; background: rgba(255,255,255,0.2); border:none; border-radius:10px; color:white; font-weight:bold; cursor:pointer; transition:0.3s; }
+button:hover { background: rgba(255,255,255,0.35); }
+.preview { margin-top:-10px; }
+.preview img, .preview video { width:100%; border-radius:12px; margin-top:10px; }
+</style>
+</head>
+<body>
+<canvas id="bgCanvas"></canvas>
+<div class="navbar">
+    <a href="{% url 'users:profile' %}">Profile</a>
+    <a href="{% url 'users:logout' %}">Logout</a>
+    <a href="{% url 'blog:list' %}">Blog</a>
+</div>
+
+<form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    {{ form.title.label_tag }}
+    {{ form.title }}
+
+    {{ form.description.label_tag }}
+    {{ form.description }}
+
+    {{ form.video_url.label_tag }}
+    {{ form.video_url }}
+
+    {{ form.preview_image.label_tag }}
+    {{ form.preview_image }}
+
+    {% if form.instance.preview_image %}
+    <div class="preview">
+        <p>Current preview image:</p>
+        <img src="{{ form.instance.preview_image.url }}" alt="Preview Image">
+    </div>
+    {% endif %}
+
+    {% if form.instance.video_url %}
+    <div class="preview">
+        <p>Current video:</p>
+        <video controls>
+            <source src="{{ form.instance.video_url.url }}" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+    </div>
+    {% endif %}
+
+    <button type="submit">{% if form.instance.pk %}Update{% else %}Save{% endif %}</button>
+</form>
+
+<script>
+const c = document.getElementById('bgCanvas'), ctx = c.getContext('2d');
+c.width = innerWidth; c.height = innerHeight;
+const ps = Array.from({length:80},()=>({x:Math.random()*c.width,y:Math.random()*c.height,dx:(Math.random()-0.5),dy:(Math.random()-0.5),r:1+Math.random()*2}));
+(function anim(){ctx.clearRect(0,0,c.width,c.height); ps.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle="rgba(255,255,255,0.6)";ctx.fill(); p.x+=p.dx; p.y+=p.dy; if(p.x<0||p.x>c.width)p.dx*=-1; if(p.y<0||p.y>c.height)p.dy*=-1;}); requestAnimationFrame(anim)})();
+</script>
+</body>
+</html>

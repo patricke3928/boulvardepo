@@ -1,0 +1,276 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Profile - TravelBook Tours</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    font-family: 'Poppins', sans-serif;
+    overflow: hidden;
+    background: #0a0a0a;
+    color: #fff;
+}
+
+canvas#bg {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.profile-container {
+    position: relative;
+    z-index: 1;
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(15px);
+    padding: 30px;
+    border-radius: 25px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+    max-width: 800px;
+    margin: 50px auto;
+    display: flex;
+    gap: 30px;
+}
+
+.left-panel {
+    width: 180px;
+    text-align: center;
+}
+
+.avatar-wrapper {
+    width: 130px; height: 130px;
+    border-radius: 50%;
+    margin: 0 auto 15px;
+    padding: 5px;
+    background: conic-gradient(from 0deg, #6d5691, #9b7fc8, #6d5691);
+    animation: rotateBorder 4s linear infinite;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+@keyframes rotateBorder {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+.avatar-wrapper img {
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid rgba(0,0,0,0.3);
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+.avatar-wrapper img:hover {
+    transform: scale(1.05); 
+    box-shadow: 0 0 20px rgba(155,127,200,0.8);
+}
+
+.right-panel {
+    flex: 1;
+}
+
+h2 {
+    margin: 0 0 15px 0;
+    color: #fff;
+    font-weight: 600;
+    font-size: 24px;
+    letter-spacing: 1px;
+}
+
+.button {
+    display: inline-block;
+    margin: 8px 5px 8px 0;
+    padding: 10px 20px;
+    font-weight: bold;
+    font-size: 14px;
+    text-align: center;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 12px;
+    background: rgba(109, 86, 145, 0.25);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 6px 15px rgba(109, 86, 145, 0.4);
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+.button:hover {
+    background: rgba(155,127,200,0.3);
+    box-shadow: 0 10px 20px rgba(155,127,200,0.6);
+    transform: translateY(-2px) scale(1.03);
+}
+.admin-button {
+    background: rgba(255, 107, 107, 0.25);
+}
+.admin-button:hover {
+    background: rgba(255,107,107,0.35);
+}
+
+.reviews-section {
+    margin-top: 25px;
+    max-height: 300px;
+    overflow-y: auto;
+    border-top: 1px solid rgba(255,255,255,0.2);
+    padding-top: 15px;
+}
+.review-item {
+    background: rgba(255,255,255,0.05);
+    padding: 10px 12px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+.review-item strong { color: #fff; }
+.review-item small { color: #ccc; display: block; margin-bottom: 5px; }
+
+#avatar-upload {
+    display: none;
+}
+</style>
+</head>
+<body>
+
+<canvas id="bg"></canvas>
+
+<div class="profile-container">
+    <div class="left-panel">
+        <div class="avatar-wrapper">
+            {% if profile.avatar %}
+                <img src="{{ avatar_url }}" alt="Avatar">
+            {% else %}
+                <img src="{% static 'images/default_avatar.png' %}" alt="Avatar">
+            {% endif %}
+        </div>
+
+        {% if profile.avatar %}
+        <form method="post" action="{% url 'users:clear_avatar' %}">
+            {% csrf_token %}
+            <button type="submit" class="button">Remove Avatar</button>
+        </form>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data" id="avatar-form">
+            {% csrf_token %}
+            <label for="avatar-upload" class="button">Choose Avatar</label>
+            <input type="file" name="avatar" id="avatar-upload" onchange="previewAvatar(this)">
+            <button type="submit" class="button">Update Avatar</button>
+        </form>
+    </div>
+
+    <div class="right-panel">
+        <h2>{{ request.user.username }}'s Profile</h2>
+
+        {% if messages %}
+        <ul class="message-list">
+            {% for message in messages %}
+                <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        <a class="button" href="{% url 'users:user_bookings' %}">Your Bookings</a>
+        <a class="button" href="/tours/">Go to Tours</a>
+        <a class="button" href="{% url 'users:password_vault' %}">Password Manager</a>
+        {% if is_admin_user %}
+        <a class="button admin-button" href="{% url 'users:admins_list' %}">Admin List</a>
+        {% endif %}
+        <a class="button" href="{% url 'users:logout' %}">Logout</a>
+
+        <div class="reviews-section">
+            <h3>Your Reviews</h3>
+            {% for review in user_reviews %}
+                <div class="review-item">
+                    <strong>{{ review.tour.title }}</strong>
+                    <small>Rating: {{ review.rating }}⭐</small>
+                    <p>{{ review.text }}</p>
+                </div>
+            {% empty %}
+                <p>You haven't written any reviews yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+function previewAvatar(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const avatarImg = document.querySelector('.avatar-wrapper img');
+            avatarImg.src = e.target.result; 
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+
+document.querySelector('label[for="avatar-upload"]').addEventListener('click', function() {
+    document.getElementById('avatar-upload').click();
+});
+
+
+const canvas = document.getElementById('bg');
+const ctx = canvas.getContext('2d');
+canvas.width = innerWidth; canvas.height = innerHeight;
+
+const particles = [];
+const PARTICLE_COUNT = 120;
+const MAX_DISTANCE = 150;
+
+class Particle {
+    constructor() { this.reset(); }
+    reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.vx = (Math.random() - 0.5) * 1.2;
+        this.vy = (Math.random() - 0.5) * 1.2;
+        this.size = Math.random() * 3 + 1;
+    }
+    update() {
+        this.x += this.vx; this.y += this.vy;
+        if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+        if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+    }
+    draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
+        ctx.fillStyle = 'rgba(109, 86, 145, 0.8)';
+        ctx.fill();
+    }
+}
+
+for (let i=0;i<PARTICLE_COUNT;i++) particles.push(new Particle());
+
+function animate() {
+    ctx.fillStyle = 'rgba(10,10,10,0.1)';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    for (let i=0;i<particles.length;i++){
+        const p1=particles[i];
+        p1.update(); p1.draw();
+        for (let j=i+1;j<particles.length;j++){
+            const p2=particles[j];
+            const dx=p1.x-p2.x; const dy=p1.y-p2.y;
+            const dist=Math.sqrt(dx*dx+dy*dy);
+            if(dist<MAX_DISTANCE){
+                ctx.beginPath();
+                ctx.strokeStyle=`rgba(109,86,145,${1-dist/MAX_DISTANCE})`;
+                ctx.lineWidth=1;
+                ctx.moveTo(p1.x,p1.y);
+                ctx.lineTo(p2.x,p2.y);
+                ctx.stroke();
+            }
+        }
+    }
+    requestAnimationFrame(animate);
+}
+animate();
+window.addEventListener('resize',()=>{canvas.width=innerWidth; canvas.height=innerHeight;});
+</script>
+
+</body>
+</html>

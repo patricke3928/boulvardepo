@@ -1,0 +1,190 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Register - TravelBook Tours</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+* { box-sizing: border-box; }
+
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    font-family: 'Poppins', sans-serif;
+    background: #0a0a0a;
+    color: #fff;
+    overflow: hidden;
+}
+
+canvas#bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+}
+
+.register-container {
+    position: relative;
+    z-index: 1;
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(15px);
+    padding: 40px 30px;
+    border-radius: 25px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+    width: 380px;
+    max-width: 90%;
+    text-align: center;
+    margin: auto;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+h2 { margin-bottom: 25px; color: #fff; font-weight: 600; font-size: 26px; }
+
+form { display: flex; flex-direction: column; gap: 15px; }
+
+input, select {
+    padding: 12px 15px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.3);
+    outline: none;
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    width: 100%;
+    transition: 0.3s;
+    font-size: 14px;
+}
+input:focus, select:focus {
+    border-color: #6d5691;
+    background: rgba(255,255,255,0.15);
+}
+
+.input-wrapper { position: relative; }
+
+.toggle-password {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #ccc;
+}
+
+
+.button {
+    padding: 12px;
+    border-radius: 15px;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 15px;
+    color: #fff;
+    text-decoration: none;
+    background: rgba(109, 86, 145, 0.25);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 20px rgba(109,86,145,0.4);
+    transition: all 0.3s ease;
+}
+.button:hover {
+    background: rgba(155,127,200,0.3);
+    box-shadow: 0 12px 25px rgba(155,127,200,0.6);
+    transform: translateY(-3px) scale(1.05);
+}
+.generate-btn { background: rgba(75, 181, 67, 0.25); box-shadow: 0 8px 20px rgba(75,181,67,0.4);}
+.generate-btn:hover { background: rgba(75,181,67,0.35); box-shadow: 0 12px 25px rgba(75,181,67,0.6); }
+
+.strength-text {
+    font-size: 0.85em;
+    text-align: left;
+    color: #ccc;
+    margin-top: -8px;
+}
+
+.login-link { margin-top: 10px; }
+.login-link a { color: #9b7fc8; text-decoration: underline; transition: 0.3s; }
+.login-link a:hover { color: #fff; }
+
+ul.messages { list-style: none; padding: 0; margin-bottom: 15px; }
+ul.messages li { margin: 5px 0; font-size: 0.9em; }
+ul.messages li.success { color: #4BB543; }
+ul.messages li.error { color: #ff6b6b; }
+</style>
+</head>
+<body>
+
+<canvas id="bg"></canvas>
+
+<div class="register-container">
+    <h2>Register</h2>
+
+    {% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+            <li class="{{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    <form method="post" onsubmit="return checkPassword()">
+        {% csrf_token %}
+        <input type="text" name="username" placeholder="Username" required>
+        <input type="text" name="first_name" placeholder="First Name">
+        <input type="email" name="email" placeholder="Email" required>
+
+        <div class="input-wrapper">
+            <input type="password" id="password1" name="password1" placeholder="Password" required>
+            <span class="toggle-password" onclick="togglePassword('password1', this)">👁</span>
+        </div>
+        <p id="strength" class="strength-text"></p>
+
+        <div class="input-wrapper">
+            <input type="password" id="password2" name="password2" placeholder="Confirm Password" required>
+            <span class="toggle-password" onclick="togglePassword('password2', this)">👁</span>
+        </div>
+
+        <select name="gender" required>
+            <option value="" disabled selected>Gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+        </select>
+
+        <input type="date" name="birth_date" required>
+
+        <button type="submit" class="button">Register</button>
+        <button type="button" class="button generate-btn" onclick="generateAndInsertPassword()">Generate Password</button>
+    </form>
+
+    <div class="login-link">
+        <p>Already have an account? <a href="{% url 'users:login' %}">Login</a></p>
+    </div>
+</div>
+
+<script>
+const canvas=document.getElementById('bg');const ctx=canvas.getContext('2d');canvas.width=innerWidth;canvas.height=innerHeight;
+const particles=[];const PARTICLE_COUNT=120;const MAX_DISTANCE=150;
+class Particle{constructor(){this.reset()} reset(){this.x=Math.random()*canvas.width;this.y=Math.random()*canvas.height;this.vx=(Math.random()-0.5)*1.2;this.vy=(Math.random()-0.5)*1.2;this.size=Math.random()*3+1;} update(){this.x+=this.vx;this.y+=this.vy;if(this.x<0||this.x>canvas.width)this.vx*=-1;if(this.y<0||this.y>canvas.height)this.vy*=-1;} draw(){ctx.beginPath();ctx.arc(this.x,this.y,this.size,0,Math.PI*2);ctx.fillStyle='rgba(109,86,145,0.8)';ctx.fill();}}
+for(let i=0;i<PARTICLE_COUNT;i++)particles.push(new Particle());
+function animate(){ctx.fillStyle='rgba(10,10,10,0.1)';ctx.fillRect(0,0,canvas.width,canvas.height);for(let i=0;i<particles.length;i++){const p1=particles[i];p1.update();p1.draw();for(let j=i+1;j<particles.length;j++){const p2=particles[j];const dx=p1.x-p2.x,dy=p1.y-p2.y;const dist=Math.sqrt(dx*dx+dy*dy);if(dist<MAX_DISTANCE){ctx.beginPath();ctx.strokeStyle=`rgba(109,86,145,${1-dist/MAX_DISTANCE})`;ctx.lineWidth=1;ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();}}}requestAnimationFrame(animate);}
+animate();
+window.addEventListener('resize',()=>{canvas.width=innerWidth;canvas.height=innerHeight;});
+
+function generatePassword(length=12){const chars="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+";let pwd="";for(let i=0;i<length;i++){pwd+=chars.charAt(Math.floor(Math.random()*chars.length));}return pwd;}
+function generateAndInsertPassword(){const pwd=generatePassword();document.getElementById('password1').value=pwd;document.getElementById('password2').value=pwd;checkStrength(pwd);}
+
+const pwdField=document.getElementById('password1');const strengthText=document.getElementById('strength');
+pwdField.addEventListener('input',()=>checkStrength(pwdField.value));
+function checkStrength(password){let strength=0;if(password.length>=8)strength++;if(/[A-Z]/.test(password))strength++;if(/[0-9]/.test(password))strength++;if(/[^A-Za-z0-9]/.test(password))strength++;const levels=["Weak","Medium","Strong","Very Strong"];const colors=["#ff4444","#ffbb33","#99cc00","#00C851"];strengthText.textContent=levels[strength-1]||"";strengthText.style.color=colors[strength-1]||"#ccc";}
+
+function togglePassword(id,el){const input=document.getElementById(id);if(input.type==="password"){input.type="text";el.textContent="🙈";}else{input.type="password";el.textContent="👁";}}
+
+function checkPassword(){const pwd=document.getElementById('password1').value;const confirm=document.getElementById('password2').value;if(pwd!==confirm){alert("Passwords do not match!");return false;}if(pwd.length<8||!/[A-Z]/.test(pwd)||!/[0-9]/.test(pwd)){alert("Password must be at least 8 characters long, contain an uppercase letter and a number.");return false;}return true;}
+</script>
+</body>
+</html>

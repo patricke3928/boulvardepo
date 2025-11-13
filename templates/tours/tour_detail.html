@@ -1,0 +1,150 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ tour.title }} — TravelBook Tours</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+html, body {
+    margin:0; padding:0; width:100%; height:100%;
+    font-family:'Poppins',sans-serif; background:#0a0a0a; color:#fff; overflow-x:hidden;
+}
+canvas#bg { position:fixed; top:0; left:0; width:100%; height:100%; z-index:0; }
+
+header.header-bar {
+    position:fixed; top:0; right:0; padding:10px 30px;
+    display:flex; justify-content:flex-end; align-items:center;
+    z-index:2;
+}
+header.header-bar nav a {
+    color:#ccc; text-decoration:none; margin-left:15px; font-weight:bold;
+    padding:6px 14px; border-radius:8px; background:rgba(109,86,145,0.25);
+    transition:0.3s;
+}
+header.header-bar nav a:hover {
+    color:#fff; background:rgba(155,127,200,0.3);
+}
+
+.container { position:relative; z-index:1; max-width:900px; margin:100px auto 60px auto; padding:20px; }
+.tour-detail {
+    background: rgba(255,255,255,0.08); backdrop-filter: blur(15px);
+    border-radius:20px; padding:25px; box-shadow:0 15px 40px rgba(0,0,0,0.6);
+}
+.tour-detail img { width:100%; max-height:400px; object-fit:cover; border-radius:15px; margin-bottom:20px; }
+.tour-detail h1 { font-size:2em; margin-bottom:15px; }
+.tour-detail .price { font-weight:bold; color:#fff; margin-bottom:20px; }
+
+.tour-btn {
+    display:inline-block; margin:10px 5px 0 0; padding:10px 20px;
+    border-radius:12px; font-weight:bold; color:#fff; text-decoration:none;
+    background:rgba(109,86,145,0.25); transition:all 0.3s ease;
+}
+.tour-btn:hover { background:rgba(155,127,200,0.3); transform:translateY(-2px) scale(1.05); }
+
+.reviews { margin-top:25px; border-top:1px solid rgba(255,255,255,0.2); padding-top:20px; }
+.review { background: rgba(0,0,0,0.3); padding:12px; border-radius:10px; margin-bottom:12px; }
+.review strong { color:#fff; }
+.review small { color:#ddd; display:block; }
+
+.add-review textarea { width:100%; border-radius:10px; border:none; padding:10px; margin-bottom:10px; resize:none; }
+.add-review button { background:#6d5691; color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; }
+.add-review button:hover { background:#9b7fc8; }
+
+</style>
+</head>
+<body>
+
+<canvas id="bg"></canvas>
+
+<header class="header-bar">
+    <nav>
+        {% if user.is_authenticated %}
+            <a href="{% url 'users:profile' %}">Profile</a>
+            <a href="{% url 'users:logout' %}">Logout</a>
+        {% else %}
+            <a href="{% url 'users:login' %}">Login</a>
+            <a href="{% url 'users:register' %}">Register</a>
+        {% endif %}
+    </nav>
+</header>
+
+<div class="container">
+    <div class="tour-detail">
+        {% if tour.image %}<img src="{{ tour.image.url }}" alt="{{ tour.title }}">{% endif %}
+        <h1>{{ tour.title }}</h1>
+        <div class="price">Price: ${{ tour.price }}</div>
+        <p>{{ tour.description }}</p>
+
+        <div class="reviews">
+            <h3>💬 Customer Reviews</h3>
+            <p>⭐ Average rating: {{ average_rating|default:"—" }}</p>
+
+            {% if reviews %}
+                {% for review in reviews %}
+                    <div class="review">
+                        <strong>{{ review.user.username }}</strong>
+                        <small>Rating: {{ review.rating }}⭐</small>
+                        <p>{{ review.text }}</p>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>No reviews yet.</p>
+            {% endif %}
+
+            {% if user.is_authenticated %}
+            <div class="add-review">
+                <form method="POST">
+                    {% csrf_token %}
+                    <label for="rating">Your Rating:</label>
+                    <select name="rating" id="rating" required>
+                        <option value="5">5 ⭐</option>
+                        <option value="4">4 ⭐</option>
+                        <option value="3">3 ⭐</option>
+                        <option value="2">2 ⭐</option>
+                        <option value="1">1 ⭐</option>
+                    </select>
+                    <textarea name="text" placeholder="Write your review..." required></textarea>
+                    <button type="submit">Submit Review</button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+
+        <a href="{% url 'tours:tour_list' %}" class="tour-btn">Back to Tours</a>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('bg');
+const ctx = canvas.getContext('2d');
+canvas.width = innerWidth; canvas.height = innerHeight;
+
+const particles = [];
+const PARTICLE_COUNT = 120;
+for(let i=0;i<PARTICLE_COUNT;i++){
+    particles.push({ x:Math.random()*canvas.width, y:Math.random()*canvas.height, vx:(Math.random()-0.5)*1.2, vy:(Math.random()-0.5)*1.2, size:Math.random()*3+1 });
+}
+
+function animate(){
+    ctx.fillStyle='rgba(10,10,10,0.1)';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    for(let p of particles){
+        p.x+=p.vx; p.y+=p.vy;
+        if(p.x<0||p.x>canvas.width) p.vx*=-1;
+        if(p.y<0||p.y>canvas.height) p.vy*=-1;
+        ctx.beginPath();
+        ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+        ctx.fillStyle='rgba(109,86,145,0.8)';
+        ctx.fill();
+    }
+    requestAnimationFrame(animate);
+}
+animate();
+window.addEventListener('resize',()=>{canvas.width=innerWidth;canvas.height=innerHeight;});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,195 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Password Vault - TravelBook</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+html, body {
+    margin: 0; padding: 0;
+    width: 100%; height: 100%;
+    font-family: 'Poppins', sans-serif;
+    overflow: hidden;
+    background: #0a0a0a;
+    color: #fff;
+}
+
+canvas#bg {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.vault-container {
+    position: relative;
+    z-index: 1;
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(15px);
+    padding: 30px;
+    border-radius: 25px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+    max-width: 900px;
+    margin: 50px auto;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+h2 {
+    margin: 0;
+    font-weight: 600;
+    font-size: 24px;
+    color: #fff;
+}
+
+.button {
+    display: inline-block;
+    margin: 0 5px 8px 0;
+    padding: 10px 20px;
+    font-weight: bold;
+    font-size: 14px;
+    text-align: center;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 12px;
+    background: rgba(109, 86, 145, 0.25);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 6px 15px rgba(109, 86, 145, 0.4);
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+.button:hover {
+    background: rgba(155,127,200,0.3);
+    box-shadow: 0 10px 20px rgba(155,127,200,0.6);
+    transform: translateY(-2px) scale(1.03);
+}
+
+.vault-entry {
+    background: rgba(255,255,255,0.05);
+    padding: 12px 15px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.vault-entry span { font-weight: 500; }
+.vault-entry button { margin-left: 5px; }
+
+.form-group { margin-bottom: 12px; }
+.form-group input { width: 100%; padding: 8px; border-radius: 8px; border: none; }
+
+</style>
+</head>
+<body>
+
+<canvas id="bg"></canvas>
+
+<div class="vault-container">
+    <div class="header">
+        <h2>{{ request.user.username }}'s Password Vault</h2>
+        <div>
+            <a href="{% url 'users:profile' %}" class="button">Profile</a>
+            <a href="{% url 'users:vault_create' %}" class="button">Add New Password</a>
+        </div>
+    </div>
+
+    {% if messages %}
+    <ul class="message-list">
+        {% for message in messages %}
+            <li>{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% for entry in entries %}
+    <div class="vault-entry">
+        <span>{{ entry.title }}</span>
+        <div>
+            <button class="button" onclick="revealPassword({{ entry.id }}, this)">Reveal</button>
+            <a href="{% url 'users:vault_edit' entry.id %}" class="button">Edit</a>
+            <a href="{% url 'users:vault_delete' entry.id %}" class="button">Delete</a>
+        </div>
+    </div>
+    {% empty %}
+    <p>No password entries yet.</p>
+    {% endfor %}
+</div>
+
+<script>
+const canvas = document.getElementById('bg');
+const ctx = canvas.getContext('2d');
+canvas.width = innerWidth; canvas.height = innerHeight;
+
+const particles = [];
+const PARTICLE_COUNT = 120;
+const MAX_DISTANCE = 150;
+
+class Particle {
+    constructor() { this.reset(); }
+    reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.vx = (Math.random() - 0.5) * 1.2;
+        this.vy = (Math.random() - 0.5) * 1.2;
+        this.size = Math.random() * 3 + 1;
+    }
+    update() {
+        this.x += this.vx; this.y += this.vy;
+        if(this.x < 0 || this.x > canvas.width) this.vx *= -1;
+        if(this.y < 0 || this.y > canvas.height) this.vy *= -1;
+    }
+    draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
+        ctx.fillStyle = 'rgba(109, 86, 145, 0.8)';
+        ctx.fill();
+    }
+}
+
+for (let i=0;i<PARTICLE_COUNT;i++) particles.push(new Particle());
+
+function animate() {
+    ctx.fillStyle = 'rgba(10,10,10,0.1)';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    for (let i=0;i<particles.length;i++){
+        const p1=particles[i];
+        p1.update(); p1.draw();
+        for (let j=i+1;j<particles.length;j++){
+            const p2=particles[j];
+            const dx=p1.x-p2.x; const dy=p1.y-p2.y;
+            const dist=Math.sqrt(dx*dx+dy*dy);
+            if(dist<MAX_DISTANCE){
+                ctx.beginPath();
+                ctx.strokeStyle=`rgba(109,86,145,${1-dist/MAX_DISTANCE})`;
+                ctx.lineWidth=1;
+                ctx.moveTo(p1.x,p1.y);
+                ctx.lineTo(p2.x,p2.y);
+                ctx.stroke();
+            }
+        }
+    }
+    requestAnimationFrame(animate);
+}
+animate();
+window.addEventListener('resize',()=>{canvas.width=innerWidth; canvas.height=innerHeight;});
+
+function revealPassword(id, btn){
+    fetch("{% url 'users:vault_reveal' 0 %}".replace('0', id), {method:'POST', headers:{'X-CSRFToken':'{{ csrf_token }}'}})
+    .then(res=>res.json())
+    .then(data=>{
+        alert("Password: "+data.password);
+    });
+}
+</script>
+
+</body>
+</html>

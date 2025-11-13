@@ -1,0 +1,74 @@
+{% load static i18n %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}TravelBook{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+<header>
+    <div class="container header-container" style="display:flex; justify-content:space-between; align-items:center;">
+        <h1><a href="{% url 'tours:tour_list' %}" class="logo">TravelBook Tours</a></h1>
+
+        <nav>
+            <ul style="display:flex; list-style:none; gap:20px; margin:0; padding:0;">
+                <li><a href="{% url 'tours:tour_list' %}">{% trans "Tours" %}</a></li>
+                {% if user.is_authenticated %}
+                    <li><a href="{% url 'users:profile' %}">{% trans "Profile" %}</a></li>
+                    <li><a href="{% url 'users:logout' %}">{% trans "Logout" %}</a></li>
+                {% else %}
+                    <li><a href="{% url 'users:login' %}">{% trans "Login" %}</a></li>
+                    <li><a href="{% url 'users:register' %}">{% trans "Register" %}</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+
+        
+        <form action="{% url 'set_language' %}" method="post" style="margin-left:20px;">
+            {% csrf_token %}
+            <select name="language" onchange="this.form.submit()" style="padding:5px; border-radius:5px;">
+                <option value="en" {% if LANGUAGE_CODE == 'en' %}selected{% endif %}>🇬🇧 English</option>
+                <option value="uk" {% if LANGUAGE_CODE == 'uk' %}selected{% endif %}>🇺🇦 Українська</option>
+            </select>
+        </form>
+    </div>
+</header>
+
+<main class="container">
+    {% block content %}
+    <section class="welcome" style="background: linear-gradient(135deg, #0077cc, #00bfff); color: white; padding: 40px; border-radius: 10px; margin-bottom: 30px;">
+        <h2>{% trans "Welcome to TravelBook Tours!" %}</h2>
+        <p>{% trans "Discover amazing destinations, plan your next adventure, and book your perfect trip with us." %}</p>
+        <p>{% trans "Whether you’re looking for relaxing beach vacations, thrilling mountain hikes, or cultural city tours, TravelBook has it all." %}</p>
+        <p>{% trans "Start exploring today and create unforgettable memories!" %}</p>
+    </section>
+
+    <section class="tour-list">
+        {% for tour in tours %}
+            <div class="tour-card">
+                {% if tour.image %}
+                    <img src="{{ tour.image.url }}" alt="{{ tour.title }}">
+                {% else %}
+                    <img src="{% static 'images/default.jpg' %}" alt="{{ tour.title }}">
+                {% endif %}
+                <div class="content">
+                    <h3>{{ tour.title }}</h3>
+                    <p>{{ tour.description|truncatewords:20 }}</p>
+                    <div class="price">${{ tour.price }}</div>
+                    <a href="#" class="btn">{% trans "Book Now" %}</a>
+                </div>
+            </div>
+        {% empty %}
+            <p>{% trans "No tours available at the moment. Please check back later!" %}</p>
+        {% endfor %}
+    </section>
+    {% endblock %}
+</main>
+
+<footer style="background: #222; color: white; text-align: center; padding: 20px; margin-top: 40px;">
+    &copy; 2025 TravelBook. {% trans "All rights reserved." %}
+</footer>
+</body>
+</html>
