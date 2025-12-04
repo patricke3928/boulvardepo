@@ -1,8 +1,6 @@
 import secrets
 import platform
 import requests
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.primitives import serialization
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -16,7 +14,7 @@ from travelbook.utils.telegram_notify import send_telegram_message
 from django.utils import timezone
 from tours.models import Review
 from datetime import datetime
-from .crypto import encrypt_text, decrypt_text
+from .crypto import encrypt_text, decrypt_text, export_keys
 from .models import PasswordEntry
 from .forms import PasswordEntryForm
 from django.http import JsonResponse
@@ -53,10 +51,23 @@ def register_user(request):
 @login_required
 @require_GET
 def generate_rsa_password_view(request):
+    """
+    Generate a strong password using cryptographically secure random.
+    Supports customization of character types and length.
+    
+    Query parameters:
+    - length: password length (default 32)
+    - letters: include uppercase/lowercase letters (default true)
+    - numbers: include digits (default true)
+    - symbols: include special characters (default true)
+    """
     length = int(request.GET.get('length', 32))
     use_letters = request.GET.get('letters', 'true').lower() == 'true'
     use_numbers = request.GET.get('numbers', 'true').lower() == 'true'
     use_symbols = request.GET.get('symbols', 'true').lower() == 'true'
+
+    # Limit password length for security
+    length = max(8, min(length, 128))
 
     chars = ''
     if use_letters: chars += string.ascii_letters
@@ -64,22 +75,21 @@ def generate_rsa_password_view(request):
     if use_symbols: chars += string.punctuation
 
     if not chars:
-        chars = string.ascii_letters + string.digits  
+        chars = string.ascii_letters + string.digits
 
+    # Use cryptographically secure random
     password = ''.join(secrets.choice(chars) for _ in range(length))
     return JsonResponse({'password': password})
 
-def generate_rsa_password():
-    private_key = rsa.generate_private_key(
-        public_exponent=65537,
-        key_size=2048,
-    )
-    pem = private_key.private_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PrivateFormat.PKCS8,
-        encryption_algorithm=serialization.NoEncryption()
-    )
-    return pem.decode('utf-8')
+
+def generate_secure_password(length=32):
+    """
+    Generate a secure password using cryptographically secure random.
+    Default: mixed uppercase, lowercase, digits, and symbols.
+    """
+    chars = string.ascii_letters + string.digits + string.punctuation
+    length = max(8, min(length, 128))
+    return ''.join(secrets.choice(chars) for _ in range(length))
 
 
 
@@ -148,7 +158,7 @@ def register_view(request):
         username = request.POST.get('username', '').strip()
         email = request.POST.get('email', '').strip()
         first_name = request.POST.get('first_name', '').strip()
-        password = generate_rsa_password()
+        password = generate_secure_password(32)
 
         if User.objects.filter(username=username).exists():
             messages.error(request, "Username already taken")

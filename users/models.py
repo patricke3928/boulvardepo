@@ -2,9 +2,9 @@ from django.db import models
 from django.contrib.auth.models import User
 from tours.models import Tour
 from django.utils import timezone
-from cryptography.fernet import Fernet
 from django.conf import settings
 import uuid
+from .crypto import encrypt_text, decrypt_text
 
 
 class Device(models.Model):
@@ -36,12 +36,11 @@ class Profile(models.Model):
         return f"{self.user.username} Profile"
 
 
-FERNET_KEY = getattr(settings, 'FERNET_KEY', Fernet.generate_key())
-fernet = Fernet(FERNET_KEY)
-
-
-
 class VaultEntry(models.Model):
+    """
+    Secure password vault entry using RSA-2048 encryption.
+    Passwords are encrypted with RSA public key and decrypted with private key.
+    """
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='vault_entries')
     title = models.CharField(max_length=255)
     login = models.CharField(max_length=255, blank=True)
@@ -53,14 +52,16 @@ class VaultEntry(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def set_password(self, raw_password):
+        """Encrypt and store password using RSA."""
         if raw_password:
-            self.password_encrypted = fernet.encrypt(raw_password.encode())
+            self.password_encrypted = encrypt_text(raw_password)
         else:
             self.password_encrypted = b''
 
     def get_password(self):
+        """Decrypt and retrieve password using RSA."""
         if self.password_encrypted:
-            return fernet.decrypt(self.password_encrypted).decode()
+            return decrypt_text(self.password_encrypted)
         return ''
 
     def __str__(self):
@@ -80,6 +81,10 @@ class Review(models.Model):
 
 
 class PasswordEntry(models.Model):
+    """
+    Password manager entry with RSA-2048 encryption.
+    Used for storing passwords for various accounts and services.
+    """
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='password_entries')
     title = models.CharField(max_length=200)
     login = models.CharField(max_length=200, blank=True)
@@ -90,10 +95,12 @@ class PasswordEntry(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def set_password(self, raw_password):
-        self.password_encrypted = fernet.encrypt(raw_password.encode())
+        """Encrypt and store password using RSA."""
+        self.password_encrypted = encrypt_text(raw_password)
 
     def get_password(self):
-        return fernet.decrypt(self.password_encrypted).decode()
+        """Decrypt and retrieve password using RSA."""
+        return decrypt_text(self.password_encrypted)
 
     def __str__(self):
         return f"{self.title} ({self.owner.username})"
