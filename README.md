@@ -526,48 +526,5 @@ python -m py_compile users/*.py
 
 ---
 
-## Для курсової роботи
 
-### Демонстрація
 
-1. **Показати код RSA:**
-   ```bash
-   cat users/crypto.py
-   ```
-
-2. **Запустити сервер:**
-   ```bash
-   python manage.py runserver
-   ```
-
-3. **Тестувати API:**
-   ```bash
-   curl "http://localhost:8000/users/generate-password/?length=32"
-   ```
-
-4. **Пояснити математику:**
-   - RSA генерація ключів (див. розділ "RSA-2048 Криптографія")
-   - OAEP padding та чому це важливо
-   - Асиметричне vs симетричне шифрування
-
-### Критерії виконання ✅
-
-- ✅ **Генератор паролів** - криптографічно безпечна генерація
-- ✅ **Менеджер паролів** - моделі з CRUD операціями
-- ✅ **RSA-2048 шифрування** - асиметричне шифрування з OAEP
-- ✅ **REST API** - для програмної інтеграції
-- ✅ **Веб-інтерфейс** - для управління паролями
-- ✅ **Документація** - детальний опис реалізації
-
----
-
-## Посилання
-
-- [Cryptography.io](https://cryptography.io/) - документація cryptography
-- [NIST RSA](https://csrc.nist.gov/publications/detail/fips/186/5/final) - FIPS 186-5
-- [OAEP](https://en.wikipedia.org/wiki/Optimal_asymmetric_encryption_padding) - Wikipedia OAEP
-- [Django Docs](https://docs.djangoproject.com/) - документація Django
-
----
-
-**Проект готовий до використання як практична частина курсової роботи! ✅**
